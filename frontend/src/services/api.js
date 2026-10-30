@@ -1,14 +1,22 @@
 const API_BASE = '/api';
 
+// Attach the current session token to every API request that needs authentication.
+const request = (url, options = {}) => {
+  const token = localStorage.getItem('grandluxe_token');
+  const headers = { ...(options.headers || {}) };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return fetch(url, { ...options, headers });
+};
+
 export const api = {
   // Auth
   async getCurrentUser() {
-    const res = await fetch(`${API_BASE}/auth/me`);
+    const res = await request(`${API_BASE}/auth/me`);
     return res.json();
   },
 
   async login(identifier, password, expectedRole) {
-    const res = await fetch(`${API_BASE}/auth/login`, {
+    const res = await request(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ identifier, email: identifier, password, expectedRole })
@@ -17,7 +25,7 @@ export const api = {
   },
 
   async switchDemoUser(email) {
-    const res = await fetch(`${API_BASE}/auth/demo-switch`, {
+    const res = await request(`${API_BASE}/auth/demo-switch`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email })
@@ -27,7 +35,7 @@ export const api = {
 
   // Staff Roles & Modules
   async getStaffRoles() {
-    const res = await fetch(`${API_BASE}/roles`);
+    const res = await request(`${API_BASE}/roles`);
     return res.json();
   },
 
@@ -38,17 +46,17 @@ export const api = {
     if (filters.type && filters.type !== 'All') params.append('type', filters.type);
     if (filters.search) params.append('search', filters.search);
 
-    const res = await fetch(`${API_BASE}/modules?${params.toString()}`);
+    const res = await request(`${API_BASE}/modules?${params.toString()}`);
     return res.json();
   },
 
   async getModuleById(id) {
-    const res = await fetch(`${API_BASE}/modules/${id}`);
+    const res = await request(`${API_BASE}/modules/${id}`);
     return res.json();
   },
 
   async createModule(moduleData) {
-    const res = await fetch(`${API_BASE}/modules`, {
+    const res = await request(`${API_BASE}/modules`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(moduleData)
@@ -57,7 +65,7 @@ export const api = {
   },
 
   async updateModule(id, moduleData) {
-    const res = await fetch(`${API_BASE}/modules/${id}`, {
+    const res = await request(`${API_BASE}/modules/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(moduleData)
@@ -66,7 +74,7 @@ export const api = {
   },
 
   async deleteModule(id) {
-    const res = await fetch(`${API_BASE}/modules/${id}`, {
+    const res = await request(`${API_BASE}/modules/${id}`, {
       method: 'DELETE'
     });
     return res.json();
@@ -74,7 +82,7 @@ export const api = {
 
   // Progress & Quizzes
   async updateLessonProgress(moduleId, lessonId, isCompleted = true) {
-    const res = await fetch(`${API_BASE}/progress/lesson`, {
+    const res = await request(`${API_BASE}/progress/lesson`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ moduleId, lessonId, isCompleted })
@@ -83,7 +91,7 @@ export const api = {
   },
 
   async submitQuiz(moduleId, answers) {
-    const res = await fetch(`${API_BASE}/progress/quiz`, {
+    const res = await request(`${API_BASE}/progress/quiz`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ moduleId, answers })
@@ -93,17 +101,17 @@ export const api = {
 
   // Scenarios
   async getScenarios() {
-    const res = await fetch(`${API_BASE}/scenarios`);
+    const res = await request(`${API_BASE}/scenarios`);
     return res.json();
   },
 
   async getScenarioById(id) {
-    const res = await fetch(`${API_BASE}/scenarios/${id}`);
+    const res = await request(`${API_BASE}/scenarios/${id}`);
     return res.json();
   },
 
   async submitScenarioDecision(scenarioId, stageId, optionId) {
-    const res = await fetch(`${API_BASE}/scenarios/decision`, {
+    const res = await request(`${API_BASE}/scenarios/decision`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ scenarioId, stageId, optionId })
@@ -113,12 +121,12 @@ export const api = {
 
   // Room Inspection Challenge
   async getInspectionData() {
-    const res = await fetch(`${API_BASE}/inspection`);
+    const res = await request(`${API_BASE}/inspection`);
     return res.json();
   },
 
   async submitInspection(foundDefectIds) {
-    const res = await fetch(`${API_BASE}/inspection/submit`, {
+    const res = await request(`${API_BASE}/inspection/submit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ foundDefectIds })
@@ -129,23 +137,23 @@ export const api = {
   // Certificates
   async getCertificates(userId = null) {
     const url = userId ? `${API_BASE}/certificates?userId=${userId}` : `${API_BASE}/certificates`;
-    const res = await fetch(url);
+    const res = await request(url);
     return res.json();
   },
 
   async verifyCertificate(code) {
-    const res = await fetch(`${API_BASE}/certificates/verify/${code}`);
+    const res = await request(`${API_BASE}/certificates/verify/${code}`);
     return res.json();
   },
 
   // Manager Analytics & Quick Cards
   async getAnalytics() {
-    const res = await fetch(`${API_BASE}/analytics`);
+    const res = await request(`${API_BASE}/analytics`);
     return res.json();
   },
 
   async getQuickCards() {
-    const res = await fetch(`${API_BASE}/quick-cards`);
+    const res = await request(`${API_BASE}/quick-cards`);
     return res.json();
   }
 };

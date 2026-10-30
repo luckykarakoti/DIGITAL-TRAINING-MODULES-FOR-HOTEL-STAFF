@@ -3,217 +3,263 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { 
   Award, 
+  Printer, 
   Search, 
   CheckCircle2, 
-  Calendar, 
-  Printer, 
   ShieldCheck, 
-  Sparkles, 
-  ExternalLink 
+  Calendar, 
+  Building2, 
+  FileText, 
+  ExternalLink,
+  AlertCircle
 } from 'lucide-react';
-import { CertificateModal } from './CertificateModal';
 
-export const CertificatesGallery = () => {
+export const CertificatesGallery = ({ onViewCertificate, onBrowseModules }) => {
   const { user } = useAuth();
   const [certificates, setCertificates] = useState([]);
-  const [selectedCert, setSelectedCert] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [verifyCode, setVerifyCode] = useState('');
   const [verificationResult, setVerificationResult] = useState(null);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [verifying, setVerifying] = useState(false);
+
+  const fetchCertificates = async () => {
+    try {
+      setLoading(true);
+      const res = await api.getCertificates(user?.id);
+      if (res.success) {
+        setCertificates(res.certificates || []);
+      }
+    } catch (err) {
+      console.error('Failed to load certificates:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await api.getCertificates(user?.id);
-        if (res.success && res.certificates) {
-          setCertificates(res.certificates);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+    fetchCertificates();
   }, [user]);
 
   const handleVerify = async (e) => {
     e.preventDefault();
     if (!verifyCode.trim()) return;
-    setIsVerifying(true);
+
+    setVerifying(true);
+    setVerificationResult(null);
     try {
       const res = await api.verifyCertificate(verifyCode.trim());
       setVerificationResult(res);
-      if (res.success && res.certificate) {
-        setSelectedCert(res.certificate);
-      }
     } catch (err) {
-      setVerificationResult({ success: false, message: 'Verification lookup error' });
+      setVerificationResult({ valid: false, message: 'Verification lookup service unavailable' });
     } finally {
-      setIsVerifying(false);
+      setVerifying(false);
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="min-h-screen bg-stone-50 text-stone-900 pb-20 font-sans">
       
-      {/* Header */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 hotel-shadow flex flex-wrap items-center justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-stone-800 mb-1">
-            <Award className="w-4 h-4 text-stone-700" />
-            <span>Corporate Transcripts & Verified Credentials</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold font-sans font-bold text-slate-900">
-            Accredited Hospitality Diplomas & Certificates
-          </h1>
-          <p className="text-slate-600 text-xs sm:text-sm mt-1 max-w-2xl">
-            Official Forbes Travel Guide certified credentials. Each diploma is cryptographically logged with a digital verification code recognized by luxury hotel audit boards.
-          </p>
-        </div>
-
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center gap-3">
-          <div className="text-2xl font-bold font-mono text-slate-900">
-            {certificates.length}
-          </div>
-          <div className="text-xs text-slate-500">
-            Verified Diplomas on Record
-          </div>
-        </div>
-      </div>
-
-      {/* Verification Lookup Box */}
-      <div className="bg-white border border-slate-200 rounded-xl p-6 hotel-shadow space-y-3">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          <span>Audit Registry: Verify Certificate Authenticity</span>
-        </h3>
-
-        <form onSubmit={handleVerify} className="flex flex-wrap items-center gap-3">
-          <div className="relative flex-1 min-w-[260px]">
-            <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Enter Verification Code (e.g. GLP-FD-9981-VERIFIED)"
-              value={verifyCode}
-              onChange={(e) => setVerifyCode(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-4 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-slate-900"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={isVerifying || !verifyCode.trim()}
-            className="px-5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all disabled:opacity-40"
-          >
-            {isVerifying ? 'Searching Registry...' : 'Verify Credential'}
-          </button>
-        </form>
-
-        {verificationResult && (
-          <div className={`p-3 rounded-lg border text-xs ${
-            verificationResult.success 
-              ? 'bg-emerald-50 border-emerald-300 text-emerald-900' 
-              : 'bg-rose-50 border-rose-300 text-rose-900'
-          }`}>
-            {verificationResult.success ? (
-              <div className="flex items-center gap-2 font-semibold">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Verified Authentic! Awarded to {verificationResult.certificate.userName} for {verificationResult.certificate.moduleTitle}.</span>
+      {/* Top Banner */}
+      <div className="bg-white border-b border-stone-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-stone-100 border border-stone-200 text-stone-700 text-xs font-semibold uppercase tracking-wider">
+                <Building2 className="w-3.5 h-3.5 text-stone-600" />
+                <span>THE LUCKY HOTEL</span>
               </div>
-            ) : (
-              <span>{verificationResult.message}</span>
-            )}
-          </div>
-        )}
-      </div>
+              <h1 className="text-3xl font-extrabold text-stone-900 tracking-tight">
+                Staff Certifications & Transcripts
+              </h1>
+              <p className="text-stone-600 text-sm max-w-2xl font-normal leading-relaxed">
+                Official records of completed SOP training, hospitality competency, and accreditation credentials.
+              </p>
+            </div>
 
-      {/* Certificates Grid */}
-      {loading ? (
-        <div className="py-20 text-center text-slate-500">
-          <Sparkles className="w-8 h-8 mx-auto mb-3 animate-spin text-stone-600" />
-          <p>Loading employee transcripts...</p>
-        </div>
-      ) : certificates.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-slate-200 rounded-2xl p-8">
-          <Award className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <h3 className="text-base font-bold text-slate-800 mb-1">No Certificates Issued Yet</h3>
-          <p className="text-xs text-slate-500 max-w-md mx-auto">
-            Complete your role's training modules and pass the 80% certification examination to earn accredited diplomas.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {certificates.map((cert) => (
-            <div
-              key={cert.certificateId}
-              className="bg-white border border-slate-200 hover:border-slate-300 rounded-2xl p-6 hotel-shadow transition-all group relative space-y-4"
-            >
-              <div className="flex items-start justify-between">
-                <div className="w-11 h-11 rounded-xl bg-stone-100 border border-stone-200 text-stone-800 flex items-center justify-center">
-                  <Award className="w-6 h-6" />
-                </div>
-                <span className="font-mono text-xs font-bold px-2.5 py-1 rounded bg-slate-100 text-slate-800">
-                  {cert.score}% Score
-                </span>
+            {/* Staff Metric Strip */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-left">
+                <p className="text-[11px] text-stone-500 font-medium uppercase tracking-wider">Active Credentials</p>
+                <p className="text-sm font-bold text-stone-900">{certificates.length} Certified</p>
               </div>
 
-              <div>
-                <span className="text-xs text-stone-800 font-bold uppercase tracking-wider block mb-1">
-                  {cert.badgeTitle}
-                </span>
-                <h3 className="text-base font-bold text-slate-900 font-sans font-bold leading-snug">
-                  {cert.moduleTitle}
-                </h3>
+              <div className="bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-left">
+                <p className="text-[11px] text-stone-500 font-medium uppercase tracking-wider">CEU Total</p>
+                <p className="text-sm font-bold text-stone-900">{user?.ceuCredits || 18.5} Credits</p>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 space-y-1 text-xs text-slate-500">
-                <div className="flex items-center justify-between">
-                  <span>Recipient:</span>
-                  <strong className="text-slate-800">{cert.userName} ({cert.userDepartment})</strong>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Issued Date:</span>
-                  <span className="text-slate-700 flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                    {cert.issuedDate}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between font-mono text-[11px]">
-                  <span>Credential ID:</span>
-                  <span className="text-slate-700">{cert.certificateId}</span>
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                <button
-                  onClick={() => setSelectedCert(cert)}
-                  className="flex items-center gap-1.5 text-xs font-bold text-slate-900 hover:text-stone-800 transition-colors"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  <span>View Official Diploma</span>
-                </button>
-
-                <button
-                  onClick={() => setSelectedCert(cert)}
-                  className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700"
-                  title="Print / Save PDF"
-                >
-                  <Printer className="w-4 h-4" />
-                </button>
+              <div className="bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-left">
+                <p className="text-[11px] text-stone-500 font-medium uppercase tracking-wider">Compliance Status</p>
+                <p className="text-sm font-bold text-emerald-700 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Audit Ready
+                </p>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          </div>
 
-      {/* Certificate Modal */}
-      {selectedCert && (
-        <CertificateModal
-          certificate={selectedCert}
-          onClose={() => setSelectedCert(null)}
-        />
-      )}
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
+        
+        {/* Certificate Verification Box */}
+        <div className="bg-white rounded-xl border border-stone-200 p-5 shadow-sm">
+          <div className="max-w-2xl">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-stone-700" />
+              <span>Digital Credential Verification Service</span>
+            </h3>
+            <p className="text-xs text-stone-600 mt-1">
+              Verify the authenticity of any The Lucky Hotel diploma or training certificate using its unique verification code.
+            </p>
+
+            <form onSubmit={handleVerify} className="flex gap-2 mt-3">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={verifyCode}
+                  onChange={(e) => setVerifyCode(e.target.value)}
+                  placeholder="Enter certificate verification code (e.g. TLH-FO-101-901)"
+                  className="w-full pl-9 pr-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-xs font-mono text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-400"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={verifying || !verifyCode.trim()}
+                className="px-4 py-2 bg-stone-900 hover:bg-stone-800 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm shrink-0"
+              >
+                {verifying ? 'Verifying...' : 'Verify Code'}
+              </button>
+            </form>
+
+            {/* Verification Result Notification */}
+            {verificationResult && (
+              <div className={`mt-3 p-3 rounded-lg border text-xs ${
+                verificationResult.valid 
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-900' 
+                  : 'bg-rose-50 border-rose-300 text-rose-900'
+              }`}>
+                {verificationResult.valid ? (
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="font-bold">Official Credential Verified:</strong> Issued to{' '}
+                      <strong>{verificationResult.certificate?.userName}</strong> for{' '}
+                      <strong>{verificationResult.certificate?.moduleTitle}</strong> on{' '}
+                      {verificationResult.certificate?.issuedDate}.
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="font-bold">Invalid or Unrecognized Code:</strong>{' '}
+                      {verificationResult.message || 'No record matches this verification code in The Lucky Hotel LMS database.'}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Certificates Grid */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-bold text-stone-900 flex items-center gap-2">
+              <Award className="w-4 h-4 text-stone-700" />
+              <span>Earned Credentials ({certificates.length})</span>
+            </h2>
+            <span className="text-xs text-stone-500">
+              Click any certificate to inspect or print
+            </span>
+          </div>
+
+          {loading ? (
+            <div className="py-20 text-center">
+              <div className="w-8 h-8 border-2 border-stone-300 border-t-stone-800 rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-stone-500 text-xs font-medium">Loading credentials...</p>
+            </div>
+          ) : certificates.length === 0 ? (
+            <div className="bg-white rounded-xl border border-stone-200 p-10 text-center max-w-md mx-auto">
+              <Award className="w-12 h-12 text-stone-300 mx-auto mb-3" />
+              <h3 className="text-sm font-bold text-stone-800">No certificates earned yet</h3>
+              <p className="text-xs text-stone-500 mt-1 leading-relaxed">
+                Complete all lessons and pass the final knowledge assessment (80%+) of any module to earn your official hotel diploma.
+              </p>
+              {onBrowseModules && (
+                <button
+                  onClick={onBrowseModules}
+                  className="mt-4 px-4 py-2 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold transition-colors"
+                >
+                  Browse Training Modules
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {certificates.map((cert) => (
+                <div
+                  key={cert.id || cert.certificateId}
+                  onClick={() => onViewCertificate(cert)}
+                  className="bg-white rounded-xl border border-stone-200 p-6 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group"
+                >
+                  <div>
+                    {/* Top Monogram Strip */}
+                    <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-stone-100 text-stone-700">
+                        {cert.certificateId || 'TLH-CERT'}
+                      </span>
+                      <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        Score: {cert.score || 100}%
+                      </span>
+                    </div>
+
+                    <div className="mt-4">
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-stone-400 block mb-1">
+                        {cert.userDepartment || 'Hospitality Operations'}
+                      </span>
+                      <h3 className="text-sm font-bold text-stone-900 group-hover:text-stone-700 transition-colors leading-snug">
+                        {cert.moduleTitle}
+                      </h3>
+                      <p className="text-xs text-stone-600 mt-2">
+                        Recipient: <strong className="text-stone-800">{cert.userName}</strong>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-stone-100">
+                    <div className="flex items-center justify-between text-[11px] text-stone-500 mb-3">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5 text-stone-400" />
+                        {cert.issuedDate}
+                      </span>
+                      <span className="font-mono text-stone-400">
+                        {cert.verificationCode}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewCertificate(cert);
+                      }}
+                      className="w-full py-2 px-3 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-900 text-xs font-semibold flex items-center justify-center gap-2 transition-colors border border-stone-200"
+                    >
+                      <Printer className="w-3.5 h-3.5 text-stone-700" />
+                      <span>View & Print Certificate</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+      </div>
 
     </div>
   );

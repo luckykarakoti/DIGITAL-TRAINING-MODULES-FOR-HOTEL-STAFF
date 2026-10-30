@@ -1,379 +1,371 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { 
-  Search, 
-  Clock, 
   BookOpen, 
+  Search, 
+  Filter, 
+  Clock, 
   Award, 
   CheckCircle2, 
-  FileCheck2, 
-  ArrowRight, 
-  Key, 
-  Bed, 
-  Utensils, 
-  Flame, 
-  Compass, 
-  Shield, 
-  Wine, 
-  Sparkles,
+  PlayCircle, 
   AlertCircle,
-  Calendar
+  Building2,
+  ChevronRight,
+  ShieldCheck,
+  Sparkles,
+  Users
 } from 'lucide-react';
 
-export const ModuleCatalog = ({ modules, onSelectModule }) => {
+export const ModuleCatalog = ({ onSelectModule, onViewCertificate }) => {
   const { user } = useAuth();
+  const [modules, setModules] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedRole, setSelectedRole] = useState('all');
   const [selectedType, setSelectedType] = useState('All');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const staffRoles = [
-    { id: 'all', title: 'All Hotel Staff', icon: BookOpen, count: modules.length },
-    { id: 'front-desk', title: 'Front Desk & Reception', icon: Key, count: modules.filter(m => m.staffRole === 'front-desk').length },
-    { id: 'housekeeping', title: 'Housekeeping & Rooms', icon: Bed, count: modules.filter(m => m.staffRole === 'housekeeping').length },
-    { id: 'food-beverage', title: 'F&B Service & Banquets', icon: Utensils, count: modules.filter(m => m.staffRole === 'food-beverage').length },
-    { id: 'kitchen', title: 'Culinary & Kitchen', icon: Flame, count: modules.filter(m => m.staffRole === 'kitchen').length },
-    { id: 'concierge-valet', title: 'Concierge & Valet', icon: Compass, count: modules.filter(m => m.staffRole === 'concierge-valet').length },
-    { id: 'security', title: 'Security & Safety', icon: Shield, count: modules.filter(m => m.staffRole === 'security').length },
-    { id: 'bartending', title: 'Bar & Mixology', icon: Wine, count: modules.filter(m => m.staffRole === 'bartending').length },
-    { id: 'spa-wellness', title: 'Spa & Wellness', icon: Sparkles, count: modules.filter(m => m.staffRole === 'spa-wellness').length }
+  const staffRoleFilters = [
+    { id: 'all', label: 'All Hotel Staff', count: null },
+    { id: 'front-desk', label: 'Front Desk & Reception', code: 'FO' },
+    { id: 'housekeeping', label: 'Housekeeping & Rooms', code: 'HK' },
+    { id: 'food-beverage', label: 'F&B Service & Dining', code: 'FB' },
+    { id: 'kitchen', label: 'Culinary & Stewarding', code: 'CUL' },
+    { id: 'concierge-valet', label: 'Concierge & Valet', code: 'CON' },
+    { id: 'security', label: 'Safety & Security', code: 'SEC' },
+    { id: 'bartending', label: 'Bar & Mixology', code: 'BAR' },
+    { id: 'spa-wellness', label: 'Spa & Wellness', code: 'SPA' }
   ];
 
-  const types = ['All', 'Mandatory Onboarding', 'Mandatory Compliance', 'Skill Upgrade', 'Elective'];
+  const typeOptions = [
+    'All',
+    'Mandatory Onboarding',
+    'Forbes Quality Standards',
+    'Core Operational SOP',
+    'Guest Recovery',
+    'Safety & Compliance'
+  ];
 
-  const filteredModules = modules.filter(m => {
-    const matchesRole = selectedRole === 'all' || m.staffRole === selectedRole;
-    const matchesType = selectedType === 'All' || m.type === selectedType;
-    const matchesSearch = !searchTerm || (
-      m.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      m.courseCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      m.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      m.department?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    return matchesRole && matchesType && matchesSearch;
-  });
+  const fetchModules = async () => {
+    try {
+      setLoading(true);
+      const filters = {};
+      if (selectedRole !== 'all') filters.staffRole = selectedRole;
+      if (selectedType !== 'All') filters.type = selectedType;
+      if (searchQuery.trim()) filters.search = searchQuery.trim();
 
-  // User's assigned courses in progress
-  const userInProgress = user?.inProgressModules || [];
-  const inProgressCourses = modules.filter(m => userInProgress.some(p => p.moduleId === m.id || p.moduleId === m.courseCode));
+      const res = await api.getModules(filters);
+      if (res.success) {
+        setModules(res.modules || []);
+      }
+    } catch (err) {
+      console.error('Failed to load modules:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchModules();
+  }, [selectedRole, selectedType, searchQuery]);
+
+  // Helper to determine user's progress for a given module
+  const getModuleStatus = (module) => {
+    if (!user) return { status: 'not-started', progress: 0 };
+
+    if (user.completedModules?.includes(module.id)) {
+      return { status: 'completed', progress: 100 };
+    }
+
+    const inProgress = user.inProgressModules?.find(m => m.moduleId === module.id);
+    if (inProgress) {
+      return { status: 'in-progress', progress: inProgress.progress || 35, dueDate: inProgress.dueDate };
+    }
+
+    return { status: 'not-started', progress: 0 };
+  };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="min-h-screen bg-stone-50 text-stone-900 pb-20 font-sans">
       
-      {/* Employee Greeting & Action Banner */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 hotel-shadow flex flex-wrap items-center justify-between gap-6">
-        <div className="space-y-1.5 max-w-2xl">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-stone-700 bg-stone-100 px-2.5 py-0.5 rounded border border-stone-200">
-              Staff Learning Portal
-            </span>
-            <span className="text-xs text-slate-400">•</span>
-            <span className="text-xs text-slate-500 font-medium">
-              Employee: {user?.name} ({user?.position})
-            </span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold font-sans font-bold text-slate-900">
-            THE LUCKY HOTEL � Standard Operating Procedures (SOP)
-          </h1>
-          <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
-            Standardized Forbes Travel Guide training modules mapped to each hotel staff role. Complete lessons, pass the compliance examination, and maintain property accreditation.
-          </p>
-        </div>
+      {/* Hero Banner: Clean font, The Lucky Hotel, subtle aesthetic */}
+      <div className="bg-white border-b border-stone-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
+          
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-stone-100 border border-stone-200 text-stone-700 text-xs font-semibold uppercase tracking-wider">
+                <Building2 className="w-3.5 h-3.5 text-stone-600" />
+                <span>THE LUCKY HOTEL</span>
+              </div>
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-stone-900 tracking-tight">
+                Digital Training Modules for Hotel Staff
+              </h1>
+              <p className="text-stone-600 text-sm sm:text-base max-w-2xl font-normal leading-relaxed">
+                Standard operating procedures, quality benchmarks, and role-specific certifications designed for luxury hospitality staff.
+              </p>
+            </div>
 
-        {/* Quick Stats Grid */}
-        <div className="flex items-center gap-4 sm:gap-6 border-t sm:border-t-0 sm:border-l border-slate-200 pt-4 sm:pt-0 sm:pl-6 text-slate-700 text-xs">
-          <div>
-            <div className="text-2xl font-bold text-slate-900 font-mono">
-              {user?.completedModules?.length || 0}
+            {/* Quick Stat Badges */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-left">
+                <p className="text-[11px] text-stone-500 font-medium uppercase tracking-wider">Assigned Staff</p>
+                <p className="text-sm font-bold text-stone-900">{user?.name || 'Staff Associate'}</p>
+              </div>
+
+              <div className="bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-left">
+                <p className="text-[11px] text-stone-500 font-medium uppercase tracking-wider">Your Progress</p>
+                <p className="text-sm font-bold text-stone-900">
+                  {user?.completedModules?.length || 0} Modules Completed
+                </p>
+              </div>
+
+              <div className="bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-left">
+                <p className="text-[11px] text-stone-500 font-medium uppercase tracking-wider">Credits Earned</p>
+                <p className="text-sm font-bold text-stone-900">
+                  {user?.ceuCredits || 18.5} CEU
+                </p>
+              </div>
             </div>
-            <div className="text-slate-500 text-[11px]">Completed</div>
           </div>
-          <div className="w-px h-8 bg-slate-200" />
-          <div>
-            <div className="text-2xl font-bold text-stone-800 font-mono">
-              {user?.inProgressModules?.length || 0}
-            </div>
-            <div className="text-slate-500 text-[11px]">In Progress</div>
+
+          {/* Department Role Filter Tabs */}
+          <div className="mt-8 pt-6 border-t border-stone-100 flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+            <span className="text-xs font-semibold text-stone-400 uppercase tracking-wider shrink-0 mr-1">
+              Filter by Role:
+            </span>
+            {staffRoleFilters.map(role => {
+              const isSelected = selectedRole === role.id;
+              return (
+                <button
+                  key={role.id}
+                  onClick={() => setSelectedRole(role.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 flex items-center gap-1.5 ${
+                    isSelected
+                      ? 'bg-stone-900 text-white shadow-sm'
+                      : 'bg-stone-100 text-stone-700 hover:bg-stone-200 border border-stone-200'
+                  }`}
+                >
+                  {role.code && (
+                    <span className={`text-[10px] font-mono px-1 rounded ${
+                      isSelected ? 'bg-stone-800 text-stone-200' : 'bg-stone-200 text-stone-600'
+                    }`}>
+                      {role.code}
+                    </span>
+                  )}
+                  <span>{role.label}</span>
+                </button>
+              );
+            })}
           </div>
-          <div className="w-px h-8 bg-slate-200" />
-          <div>
-            <div className="text-2xl font-bold text-emerald-700 font-mono">
-              {user?.ceuCredits || 18.5}
-            </div>
-            <div className="text-slate-500 text-[11px]">CEU Credits</div>
-          </div>
+
         </div>
       </div>
 
-      {/* Staff Roles Selection Grid (Real hotel departments) */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            Browse Training Modules by Staff Role
-          </h2>
-          <span className="text-xs text-slate-400">
-            Select a department to view dedicated staff courses
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {staffRoles.slice(0, 5).map((role) => {
-            const Icon = role.icon;
-            const isSelected = selectedRole === role.id;
-            return (
-              <button
-                key={role.id}
-                onClick={() => setSelectedRole(role.id)}
-                className={`p-3.5 rounded-xl border text-left transition-all flex items-center gap-3 ${
-                  isSelected
-                    ? 'bg-slate-900 text-white border-slate-900 shadow-md'
-                    : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                  isSelected ? 'bg-stone-200 text-stone-900' : 'bg-slate-100 text-slate-700'
-                }`}>
-                  <Icon className="w-4 h-4" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs font-bold truncate">{role.title}</div>
-                  <div className={`text-[10px] ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>
-                    {role.count} Modules
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {staffRoles.slice(5).map((role) => {
-            const Icon = role.icon;
-            const isSelected = selectedRole === role.id;
-            return (
-              <button
-                key={role.id}
-                onClick={() => setSelectedRole(role.id)}
-                className={`p-3.5 rounded-xl border text-left transition-all flex items-center gap-3 ${
-                  isSelected
-                    ? 'bg-slate-900 text-white border-slate-900 shadow-md'
-                    : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                  isSelected ? 'bg-stone-200 text-stone-900' : 'bg-slate-100 text-slate-700'
-                }`}>
-                  <Icon className="w-4 h-4" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs font-bold truncate">{role.title}</div>
-                  <div className={`text-[10px] ${isSelected ? 'text-slate-300' : 'text-slate-500'}`}>
-                    {role.count} Modules
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Filter and Search Bar */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 hotel-shadow flex flex-wrap items-center justify-between gap-4">
+      {/* Main Content Area */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         
-        {/* Search Input */}
-        <div className="relative flex-1 min-w-[260px]">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search by course code (FO-101), SOP name, or keywords..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-4 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-stone-900 focus:bg-white transition-all"
-          />
+        {/* Search & Secondary Type Filter */}
+        <div className="bg-white p-3.5 rounded-xl border border-stone-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3 mb-8">
+          <div className="relative w-full sm:w-96">
+            <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search modules, SOP codes, or topics..."
+              className="w-full pl-10 pr-4 py-2 bg-stone-50 border border-stone-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-stone-400 text-stone-800 placeholder-stone-400"
+            />
+          </div>
+
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="flex items-center gap-2 text-xs text-stone-500 shrink-0">
+              <Filter className="w-3.5 h-3.5" />
+              <span>Category:</span>
+            </div>
+            <select
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              className="bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs text-stone-800 font-medium focus:outline-none focus:ring-1 focus:ring-stone-400 w-full sm:w-auto"
+            >
+              {typeOptions.map(t => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+
+            <span className="text-xs text-stone-500 font-medium pl-2 hidden sm:inline">
+              Showing <strong className="text-stone-900">{modules.length}</strong> modules
+            </span>
+          </div>
         </div>
 
-        {/* Course Type Filter */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-500 font-medium">Compliance Type:</span>
-          <select
-            value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
-            className="bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-stone-900"
-          >
-            {types.map(t => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-        </div>
+        {/* Loading State */}
+        {loading ? (
+          <div className="py-20 text-center">
+            <div className="w-8 h-8 border-2 border-stone-300 border-t-stone-800 rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-stone-500 text-xs font-medium">Loading training modules...</p>
+          </div>
+        ) : modules.length === 0 ? (
+          <div className="py-20 text-center bg-white rounded-2xl border border-stone-200 p-8 max-w-md mx-auto">
+            <BookOpen className="w-10 h-10 text-stone-400 mx-auto mb-3" />
+            <h3 className="text-base font-bold text-stone-900">No training modules found</h3>
+            <p className="text-xs text-stone-500 mt-1">
+              Try adjusting your role filter or search criteria to view available hotel courses.
+            </p>
+            <button
+              onClick={() => { setSelectedRole('all'); setSelectedType('All'); setSearchQuery(''); }}
+              className="mt-4 px-4 py-2 rounded-lg bg-stone-900 text-white text-xs font-semibold hover:bg-stone-800"
+            >
+              Reset Filters
+            </button>
+          </div>
+        ) : (
+          /* Grid of Training Modules */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {modules.map((m) => {
+              const statusInfo = getModuleStatus(m);
+              const isCompleted = statusInfo.status === 'completed';
+              const isInProgress = statusInfo.status === 'in-progress';
 
-        {/* Clear Filter if active */}
-        {(selectedRole !== 'all' || selectedType !== 'All' || searchTerm) && (
-          <button
-            onClick={() => {
-              setSelectedRole('all');
-              setSelectedType('All');
-              setSearchTerm('');
-            }}
-            className="text-xs text-stone-700 font-semibold hover:underline"
-          >
-            Reset All Filters
-          </button>
-        )}
-      </div>
-
-      {/* Modules Count Indicator */}
-      <div className="flex items-center justify-between text-xs text-slate-500">
-        <span>
-          Showing <strong>{filteredModules.length}</strong> accredited training modules
-          {selectedRole !== 'all' && ` for ${staffRoles.find(r => r.id === selectedRole)?.title}`}
-        </span>
-      </div>
-
-      {/* Modules Grid */}
-      {filteredModules.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-slate-200 rounded-2xl p-8">
-          <BookOpen className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-          <h3 className="text-base font-bold text-slate-800 mb-1">No Modules Match Your Criteria</h3>
-          <p className="text-xs text-slate-500">
-            Please reset your role selection or search query.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredModules.map((module) => {
-            const isCompleted = user?.completedModules?.includes(module.id) || user?.completedModules?.includes(module.courseCode);
-            const inProgress = user?.inProgressModules?.find(p => p.moduleId === module.id || p.moduleId === module.courseCode);
-
-            // Badge color based on compliance type
-            let badgeStyle = "bg-slate-100 text-slate-700 border-slate-200";
-            if (module.type === "Mandatory Onboarding") {
-              badgeStyle = "bg-rose-50 text-rose-700 border-rose-200";
-            } else if (module.type === "Mandatory Compliance") {
-              badgeStyle = "bg-blue-50 text-blue-700 border-blue-200";
-            } else if (module.type === "Skill Upgrade") {
-              badgeStyle = "bg-amber-50 text-amber-800 border-stone-200";
-            }
-
-            return (
-              <div
-                key={module.id}
-                onClick={() => onSelectModule(module)}
-                className="bg-white border border-slate-200 hover:border-slate-400 rounded-2xl overflow-hidden hotel-shadow hover:hotel-shadow-lg transition-all duration-200 flex flex-col justify-between group cursor-pointer"
-              >
-                <div>
-                  {/* Thumbnail & Badges */}
-                  <div className="relative h-44 overflow-hidden bg-slate-100">
+              return (
+                <div
+                  key={m.id}
+                  onClick={() => onSelectModule(m)}
+                  className="bg-white rounded-xl border border-stone-200 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between cursor-pointer group"
+                >
+                  {/* Top Image Banner */}
+                  <div className="relative h-44 overflow-hidden bg-stone-100">
                     <img
-                      src={module.thumbnail}
-                      alt={module.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      src={m.thumbnail || "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"}
+                      alt={m.title}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent" />
-
-                    {/* Course Code & Type Badges */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-stone-900/70 via-transparent to-transparent" />
+                    
+                    {/* Top Badges */}
                     <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-                      <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-slate-900/90 text-white backdrop-blur-sm border border-slate-700">
-                        {module.courseCode || module.id}
+                      <span className="px-2.5 py-1 rounded-md bg-stone-900/80 backdrop-blur-sm text-stone-100 text-[10px] font-mono font-bold tracking-wider border border-white/20">
+                        {m.courseCode || m.id}
                       </span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${badgeStyle} backdrop-blur-sm`}>
-                        {module.type}
-                      </span>
-                    </div>
 
-                    {/* Department Tag & SOP Code */}
-                    <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-white text-[11px]">
-                      <span className="font-medium text-slate-200">
-                        {module.department}
-                      </span>
-                      {module.sopCode && (
-                        <span className="font-mono text-stone-200 font-semibold text-[10px]">
-                          {module.sopCode}
+                      {isCompleted ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-600/90 text-white text-[11px] font-semibold backdrop-blur-sm">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Certified</span>
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-md bg-white/90 text-stone-800 text-[10px] font-bold tracking-wider uppercase backdrop-blur-sm border border-stone-200">
+                          {m.type?.split(' ')[0] || 'Standard'}
                         </span>
                       )}
+                    </div>
+
+                    {/* Department pill at bottom of image */}
+                    <div className="absolute bottom-3 left-3">
+                      <span className="text-white text-xs font-semibold drop-shadow-sm flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-stone-300 inline-block" />
+                        {m.department}
+                      </span>
                     </div>
                   </div>
 
                   {/* Body Content */}
-                  <div className="p-5 space-y-3">
-                    <h3 className="font-sans font-bold text-base font-bold text-slate-900 group-hover:text-stone-700 transition-colors leading-snug">
-                      {module.title}
-                    </h3>
-
-                    <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
-                      {module.summary}
-                    </p>
-
-                    {/* Progress indicator if in progress */}
-                    {inProgress && !isCompleted && (
-                      <div className="space-y-1 pt-1">
-                        <div className="flex items-center justify-between text-[11px] text-slate-600">
-                          <span className="font-semibold text-amber-700">In Progress ({inProgress.progress}%)</span>
-                          {inProgress.dueDate && (
-                            <span className="text-slate-400 flex items-center gap-1">
-                              <Calendar className="w-3 h-3 text-slate-400" />
-                              Due: {inProgress.dueDate}
-                            </span>
-                          )}
-                        </div>
-                        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-stone-800 rounded-full"
-                            style={{ width: `${inProgress.progress}%` }}
-                          />
-                        </div>
+                  <div className="p-5 flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2 text-[11px] text-stone-500 font-medium">
+                        <span>{m.level || 'Foundational'}</span>
+                        <span>•</span>
+                        <span>{m.sopCode || 'SOP-LH'}</span>
                       </div>
-                    )}
 
-                    {/* Meta info strip */}
-                    <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
-                        {module.duration}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <BookOpen className="w-3.5 h-3.5 text-slate-400" />
-                        {module.lessons?.length || 3} Lessons
-                      </span>
-                      <span className="flex items-center gap-1 text-slate-700 font-semibold font-mono">
-                        <FileCheck2 className="w-3.5 h-3.5 text-emerald-600" />
-                        {module.ceuCredits || 1.5} CEU
-                      </span>
+                      <h3 className="text-base font-bold text-stone-900 leading-snug group-hover:text-stone-700 transition-colors">
+                        {m.title}
+                      </h3>
+
+                      <p className="text-xs text-stone-600 line-clamp-2 mt-2 leading-relaxed">
+                        {m.summary}
+                      </p>
+                    </div>
+
+                    <div className="mt-5 pt-4 border-t border-stone-100">
+                      
+                      {/* Course Metadata Strip */}
+                      <div className="flex items-center justify-between text-xs text-stone-500 mb-3">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-stone-400" />
+                          {m.duration}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <BookOpen className="w-3.5 h-3.5 text-stone-400" />
+                          {m.lessonsCount || m.lessons?.length || 3} Lessons
+                        </span>
+                        <span className="flex items-center gap-1 font-semibold text-stone-700">
+                          <Award className="w-3.5 h-3.5 text-stone-400" />
+                          {m.ceuCredits || 1.5} CEU
+                        </span>
+                      </div>
+
+                      {/* Progress Bar (if in-progress or completed) */}
+                      {isInProgress && (
+                        <div className="mb-3">
+                          <div className="flex justify-between text-[11px] text-stone-600 font-medium mb-1">
+                            <span>In Progress</span>
+                            <span>{statusInfo.progress}%</span>
+                          </div>
+                          <div className="w-full bg-stone-200 h-1.5 rounded-full overflow-hidden">
+                            <div 
+                              className="bg-stone-800 h-full rounded-full transition-all" 
+                              style={{ width: `${statusInfo.progress}%` }} 
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Action Button */}
+                      {isCompleted ? (
+                        <div className="flex items-center justify-between pt-1">
+                          <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            Completed
+                          </span>
+                          <span className="text-xs font-semibold text-stone-900 group-hover:underline flex items-center gap-1">
+                            Review Module
+                            <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
+                          </span>
+                        </div>
+                      ) : isInProgress ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectModule(m);
+                          }}
+                          className="w-full py-2.5 px-3 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm"
+                        >
+                          <PlayCircle className="w-4 h-4" />
+                          <span>Resume Lesson</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectModule(m);
+                          }}
+                          className="w-full py-2.5 px-3 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-900 text-xs font-semibold flex items-center justify-center gap-2 transition-colors border border-stone-200"
+                        >
+                          <PlayCircle className="w-4 h-4 text-stone-700" />
+                          <span>Start Training Module</span>
+                        </button>
+                      )}
+
                     </div>
                   </div>
                 </div>
+              );
+            })}
+          </div>
+        )}
 
-                {/* Card Action Footer */}
-                <div className="p-5 pt-0">
-                  <div className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${
-                    isCompleted
-                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                      : inProgress
-                      ? 'bg-stone-800 text-white hover:bg-stone-700 shadow-sm'
-                      : 'bg-slate-900 text-white hover:bg-slate-800'
-                  }`}>
-                    {isCompleted ? (
-                      <>
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                        <span>Certified • Review Standard</span>
-                      </>
-                    ) : inProgress ? (
-                      <>
-                        <span>Resume Lesson</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </>
-                    ) : (
-                      <>
-                        <span>Start Training Course</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </>
-                    )}
-                  </div>
-                </div>
-
-              </div>
-            );
-          })}
-        </div>
-      )}
+      </div>
 
     </div>
   );

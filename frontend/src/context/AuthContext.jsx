@@ -78,6 +78,7 @@ export const AuthProvider = ({ children }) => {
       if (res.success && res.user) {
         setUser(res.user);
         localStorage.setItem('grandluxe_user', JSON.stringify(res.user));
+        if (res.token) localStorage.setItem('grandluxe_token', res.token);
         return { success: true, user: res.user };
       } else {
         return { success: false, message: res.message || 'Login failed' };
@@ -92,6 +93,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('grandluxe_user');
+    localStorage.removeItem('grandluxe_token');
   };
 
   const switchUser = async (email) => {
@@ -101,6 +103,7 @@ export const AuthProvider = ({ children }) => {
       if (res.success && res.user) {
         setUser(res.user);
         localStorage.setItem('grandluxe_user', JSON.stringify(res.user));
+        if (res.token) localStorage.setItem('grandluxe_token', res.token);
       }
     } catch (err) {
       console.error('Failed to switch demo user:', err);

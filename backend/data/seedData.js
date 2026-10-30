@@ -15,6 +15,7 @@ export const seedStaffRoles = [
 export const seedUsers = [
   {
     id: "usr_01",
+    password: "$2a$10$B6xDaB5kBbxGxvv1S5t.0uORh9auDpN631TsIXuz6kFMZ7PkveRoa",
     name: "Aiden Mercer",
     email: "aiden.mercer@luckyhotel.com",
     role: "staff",
@@ -36,6 +37,7 @@ export const seedUsers = [
   },
   {
     id: "usr_02",
+    password: "$2a$10$B6xDaB5kBbxGxvv1S5t.0uORh9auDpN631TsIXuz6kFMZ7PkveRoa",
     name: "Elena Rostova",
     email: "elena.rostova@luckyhotel.com",
     role: "staff",
@@ -56,6 +58,7 @@ export const seedUsers = [
   },
   {
     id: "usr_03",
+    password: "$2a$10$B6xDaB5kBbxGxvv1S5t.0uORh9auDpN631TsIXuz6kFMZ7PkveRoa",
     name: "Mateo Rossi",
     email: "mateo.rossi@luckyhotel.com",
     role: "staff",
@@ -76,6 +79,7 @@ export const seedUsers = [
   },
   {
     id: "usr_04",
+    password: "$2a$10$B6xDaB5kBbxGxvv1S5t.0uORh9auDpN631TsIXuz6kFMZ7PkveRoa",
     name: "Marcus Vance",
     email: "director@luckyhotel.com",
     role: "manager",

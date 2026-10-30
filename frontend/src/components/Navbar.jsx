@@ -3,9 +3,6 @@ import { useAuth, demoProfiles } from '../context/AuthContext';
 import { 
   Building2, 
   BookOpen, 
-  MessageSquare, 
-  SearchCheck, 
-  ShieldAlert, 
   Award, 
   BarChart3, 
   ChevronDown, 
@@ -13,7 +10,6 @@ import {
   Menu, 
   X,
   FileCheck2,
-  GraduationCap,
   LogOut
 } from 'lucide-react';
 
@@ -22,29 +18,27 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
   const [profileDropdown, setProfileDropdown] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Pure digital training navigation items only (unnecessary mini-game features removed)
   const navItems = [
-    { id: 'modules', label: 'Course Catalog & Staff Modules', icon: BookOpen },
-    { id: 'scenarios', label: 'Guest Incident Simulator', icon: MessageSquare },
-    { id: 'inspection', label: 'Suite Quality Audit', icon: SearchCheck },
-    { id: 'emergency', label: 'Emergency SOP Cards', icon: ShieldAlert },
-    { id: 'certificates', label: 'Transcripts & Diplomas', icon: Award },
-    { id: 'manager', label: 'Director Operations Portal', icon: BarChart3, badge: 'Director' }
+    { id: 'modules', label: 'Training Modules', icon: BookOpen },
+    { id: 'certificates', label: 'Certificates & Records', icon: Award },
+    { id: 'manager', label: 'Director Portal', icon: BarChart3, badge: 'Director' }
   ];
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-stone-200 hotel-shadow font-sans">
       
-      {/* Top Utility Strip with subtle colors */}
+      {/* Top Utility Strip */}
       <div className="bg-stone-900 text-stone-300 text-[11px] px-4 py-1.5 border-b border-stone-800">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 text-stone-200 font-medium tracking-wide">
               <Building2 className="w-3.5 h-3.5 text-stone-400" />
-              THE LUCKY HOTEL • Flagship Property (TLH-01)
+              THE LUCKY HOTEL
             </span>
             <span className="hidden md:inline text-stone-600">|</span>
             <span className="hidden md:inline text-stone-400 font-normal">
-              Hospitality Standards & Operations Academy
+              Digital Training Modules for Hotel Staff
             </span>
           </div>
 
@@ -53,7 +47,7 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
               Department: <strong className="text-stone-200 font-medium">{user?.department || 'Hotel Operations'}</strong>
             </span>
             <span className="text-stone-400">
-              ID: <strong className="text-stone-200 font-mono">{user?.employeeId || 'EMP-4109'}</strong>
+              Employee ID: <strong className="text-stone-200 font-mono">{user?.employeeId || 'EMP-4109'}</strong>
             </span>
           </div>
         </div>
@@ -63,13 +57,13 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           
-          {/* Logo & Hotel Brand with Simple Modern Font */}
+          {/* Logo & Hotel Brand */}
           <div 
             onClick={() => setActiveTab('modules')}
             className="flex items-center gap-3 cursor-pointer select-none group"
           >
             <div className="w-9 h-9 rounded-lg bg-stone-900 flex items-center justify-center text-stone-100 shadow-sm transition-transform group-hover:scale-105">
-              <span className="font-extrabold text-sm tracking-tighter">LH</span>
+              <span className="font-extrabold text-sm tracking-wider">LH</span>
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -81,13 +75,13 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
                 </span>
               </div>
               <p className="text-[10px] text-stone-500 font-medium tracking-wide">
-                Digital Training & Standard Operating Procedures
+                Digital Training Modules for Hotel Staff
               </p>
             </div>
           </div>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-1.5">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -95,7 +89,7 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
                     isActive
                       ? 'bg-stone-100 text-stone-900 border border-stone-300 shadow-sm'
                       : 'text-stone-600 hover:text-stone-900 hover:bg-stone-50'
@@ -104,7 +98,7 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
                   <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-stone-900' : 'text-stone-400'}`} />
                   <span>{item.label}</span>
                   {item.badge && (
-                    <span className="ml-1 text-[9px] font-bold px-1.5 py-0.2 rounded bg-stone-200 text-stone-800">
+                    <span className="ml-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-stone-200 text-stone-800">
                       {item.badge}
                     </span>
                   )}
@@ -226,7 +220,7 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
           </div>
 
           {/* Mobile menu button */}
-          <div className="flex lg:hidden">
+          <div className="flex md:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-100"
@@ -240,8 +234,8 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
 
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-white border-b border-stone-200 px-4 pt-2 pb-6 space-y-3">
-          <div className="grid grid-cols-2 gap-2 pb-3 border-b border-stone-100">
+        <div className="md:hidden bg-white border-b border-stone-200 px-4 pt-2 pb-6 space-y-3">
+          <div className="grid grid-cols-1 gap-2 pb-3 border-b border-stone-100">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;

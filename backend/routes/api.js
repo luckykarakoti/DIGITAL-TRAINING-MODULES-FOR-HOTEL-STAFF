@@ -42,7 +42,7 @@ router.get('/certificates', protect, getUserCertificates);
 router.get('/certificates/verify/:code', verifyCertificate);
 
 // Manager Analytics & Dashboard
-router.get('/analytics', protect, getManagerAnalytics);
+router.get('/analytics', protect, requireManager, getManagerAnalytics);
 router.get('/quick-cards', getQuickCards);
 
 export default router;

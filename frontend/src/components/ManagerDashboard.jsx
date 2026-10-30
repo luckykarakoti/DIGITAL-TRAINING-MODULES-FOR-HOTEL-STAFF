@@ -1,56 +1,56 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, demoProfiles } from '../context/AuthContext';
 import { 
+  Building2, 
   BarChart3, 
   Users, 
-  Award, 
-  Clock, 
-  AlertTriangle, 
-  Plus, 
   CheckCircle2, 
-  ShieldCheck, 
-  TrendingUp, 
+  AlertTriangle, 
+  Clock, 
+  Award, 
+  Plus, 
   BookOpen, 
-  X, 
-  FileCheck2,
-  Calendar
+  ShieldCheck, 
+  FileText,
+  X,
+  Check
 } from 'lucide-react';
 
-export const ManagerDashboard = ({ onModuleCreated }) => {
+export const ManagerDashboard = ({ onSelectModule }) => {
   const { user } = useAuth();
-  const [analyticsData, setAnalyticsData] = useState(null);
-  const [staffList, setStaffList] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showAddModuleModal, setShowAddModuleModal] = useState(false);
 
-  // Form state
+  // New module form state
   const [newTitle, setNewTitle] = useState('');
-  const [newCourseCode, setNewCourseCode] = useState('');
-  const [newStaffRole, setNewStaffRole] = useState('front-desk');
   const [newDepartment, setNewDepartment] = useState('Front Desk & Reception');
-  const [newType, setNewType] = useState('Mandatory Onboarding');
-  const [newDuration, setNewDuration] = useState('20 min');
+  const [newRole, setNewRole] = useState('front-desk');
+  const [newCourseCode, setNewCourseCode] = useState('FO-201');
+  const [newDuration, setNewDuration] = useState('30 min');
+  const [newLevel, setNewLevel] = useState('Intermediate');
   const [newSummary, setNewSummary] = useState('');
+  const [newSopCode, setNewSopCode] = useState('SOP-FO-08');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [toastMessage, setToastMessage] = useState(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  const fetchAnalytics = async () => {
+  const fetchAnalyticsData = async () => {
     try {
+      setLoading(true);
       const res = await api.getAnalytics();
       if (res.success) {
-        setAnalyticsData(res.analytics);
-        setStaffList(res.staffList || []);
+        setAnalytics(res.analytics);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Failed to load analytics:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchAnalytics();
+    fetchAnalyticsData();
   }, []);
 
   const handleCreateModule = async (e) => {
@@ -59,391 +59,420 @@ export const ManagerDashboard = ({ onModuleCreated }) => {
 
     setIsSubmitting(true);
     try {
-      const modulePayload = {
+      const moduleData = {
+        id: newCourseCode.trim() || `MOD-${Date.now()}`,
+        courseCode: newCourseCode.trim(),
         title: newTitle.trim(),
-        courseCode: newCourseCode.trim() || `GEN-${Math.floor(100 + Math.random() * 900)}`,
-        staffRole: newStaffRole,
         department: newDepartment,
-        type: newType,
+        staffRole: newRole,
         duration: newDuration,
-        summary: newSummary.trim(),
+        level: newLevel,
+        type: 'Standard Operating Procedure',
         ceuCredits: 2.0,
-        thumbnail: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=800&q=80',
+        summary: newSummary.trim(),
+        sopCode: newSopCode.trim(),
+        thumbnail: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
         lessons: [
           {
-            id: `lesson_${Date.now()}`,
-            title: `${newTitle} Core SOP Execution`,
+            id: `${newCourseCode.toLowerCase()}-l1`,
+            title: `Introduction & Objective: ${newTitle.trim()}`,
             duration: '10 min',
-            sopObjective: 'Execute procedure in compliance with Forbes 5-Star benchmarks.',
-            standards: ['Perform standard with pristine grooming, poise, and speed.'],
-            procedureSteps: [
-              { step: 1, action: 'Initial Preparation', detail: 'Inspect workstation and verify guest profile.' },
-              { step: 2, action: 'Execution', detail: 'Follow standardized departmental checklist.' },
-              { step: 3, action: 'Completion Log', detail: 'Record completed action in Opera PMS.' }
+            sopObjective: newSummary.trim(),
+            standards: [
+              'Adhere to all The Lucky Hotel brand guidelines and safety requirements.',
+              'Ensure continuous compliance with supervisor inspection standards.'
             ],
-            auditChecklist: ['Was procedure completed within allocated standard time?']
+            procedureSteps: [
+              { step: 1, action: 'Initial Preparation', detail: 'Inspect workstation and review guest service notes.' },
+              { step: 2, action: 'Standard Execution', detail: 'Follow standardized procedural sequence without deviation.' }
+            ]
           }
         ],
         quiz: {
           passingScore: 80,
           questions: [
             {
-              id: `q_${Date.now()}`,
-              question: `What is the primary objective of ${newTitle}?`,
+              id: 'q1',
+              question: `What is the principal objective of ${newTitle.trim()} at The Lucky Hotel?`,
               options: [
-                'Uphold hotel brand excellence with flawless personal accountability',
-                'Rush the task to cut shift corners',
-                'Wait for guest complaints before acting'
+                'Ensure Forbes Travel Guide five-star service compliance',
+                'Minimize staff interactions with guests',
+                'Expedite procedures by skipping verification steps',
+                'None of the above'
               ],
               correctAnswer: 0,
-              explanation: 'Hospitality excellence requires proactive compliance.'
+              rationale: 'All operating procedures at The Lucky Hotel are benchmarked against 5-star service quality.'
             }
           ]
         }
       };
 
-      const res = await api.createModule(modulePayload);
+      const res = await api.createModule(moduleData);
       if (res.success) {
-        setToastMessage('New Staff Training Course Published to LMS!');
-        setTimeout(() => setToastMessage(null), 4000);
-        setShowCreateModal(false);
-        setNewTitle('');
-        setNewSummary('');
-        setNewCourseCode('');
-        if (onModuleCreated) onModuleCreated(res.module);
-        fetchAnalytics();
+        setSubmitSuccess(true);
+        setTimeout(() => {
+          setShowAddModuleModal(false);
+          setSubmitSuccess(false);
+          setNewTitle('');
+          setNewSummary('');
+        }, 1200);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Failed to author module:', err);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const overview = analyticsData?.overview || {};
-  const roleStats = analyticsData?.roleStats || [];
-  const complianceAlerts = analyticsData?.complianceAlerts || [];
-
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="min-h-screen bg-stone-50 text-stone-900 pb-20 font-sans">
       
-      {/* Toast Alert */}
-      {toastMessage && (
-        <div className="fixed top-20 right-8 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-xl flex items-center gap-2 text-xs font-semibold">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
+      {/* Header Banner */}
+      <div className="bg-white border-b border-stone-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-stone-100 border border-stone-200 text-stone-700 text-xs font-semibold uppercase tracking-wider">
+                <Building2 className="w-3.5 h-3.5 text-stone-600" />
+                <span>THE LUCKY HOTEL</span>
+              </div>
+              <h1 className="text-3xl font-extrabold text-stone-900 tracking-tight">
+                Director Operations Portal
+              </h1>
+              <p className="text-stone-600 text-sm max-w-2xl font-normal leading-relaxed">
+                Property-wide compliance monitoring, department SOP auditing, and curriculum management for hotel leadership.
+              </p>
+            </div>
 
-      {/* Header */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 hotel-shadow flex flex-wrap items-center justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-            <BarChart3 className="w-4 h-4 text-stone-700" />
-            <span>Directorate of Training & Quality Standards</span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowAddModuleModal(true)}
+                className="px-4 py-2.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold flex items-center gap-2 transition-colors shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Author New Training Module</span>
+              </button>
+            </div>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold font-sans font-bold text-slate-900">
-            Property SOP Compliance & Audit Readiness
-          </h1>
-          <p className="text-slate-600 text-xs sm:text-sm mt-1">
-            Real-time departmental metrics, training certifications, and staff compliance matrices.
-          </p>
-        </div>
 
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-md transition-all"
-        >
-          <Plus className="w-4 h-4 text-stone-300" />
-          <span>Author New Staff Module</span>
-        </button>
+        </div>
       </div>
 
-      {/* KPI Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
         
-        <div className="bg-white border border-slate-200 rounded-xl p-5 hotel-shadow">
-          <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
-            <span>Overall Audit Compliance</span>
-            <TrendingUp className="w-4 h-4 text-emerald-600" />
+        {/* Top 4 KPI Metrics */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm">
+            <div className="flex items-center justify-between text-stone-500 mb-2">
+              <span className="text-xs font-semibold uppercase tracking-wider">Compliance Rate</span>
+              <ShieldCheck className="w-4 h-4 text-stone-700" />
+            </div>
+            <p className="text-2xl font-extrabold text-stone-900 font-mono">
+              {analytics?.overview?.overallComplianceRate || 89}%
+            </p>
+            <p className="text-[11px] text-emerald-700 font-medium mt-1">
+              +4.2% above brand benchmark
+            </p>
           </div>
-          <div className="text-3xl font-bold text-slate-900 font-mono">
-            {overview.overallComplianceRate || 89}%
+
+          <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm">
+            <div className="flex items-center justify-between text-stone-500 mb-2">
+              <span className="text-xs font-semibold uppercase tracking-wider">Active Staff Enrolled</span>
+              <Users className="w-4 h-4 text-stone-700" />
+            </div>
+            <p className="text-2xl font-extrabold text-stone-900 font-mono">
+              {analytics?.overview?.totalStaff || 84}
+            </p>
+            <p className="text-[11px] text-stone-500 font-medium mt-1">
+              Across 8 operational divisions
+            </p>
           </div>
-          <div className="text-[11px] text-emerald-700 font-semibold mt-1">
-            Forbes Target: ≥ 85%
+
+          <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm">
+            <div className="flex items-center justify-between text-stone-500 mb-2">
+              <span className="text-xs font-semibold uppercase tracking-wider">Training Hours This Month</span>
+              <Clock className="w-4 h-4 text-stone-700" />
+            </div>
+            <p className="text-2xl font-extrabold text-stone-900 font-mono">
+              {analytics?.overview?.activeTrainingHoursThisMonth || 1280} hrs
+            </p>
+            <p className="text-[11px] text-stone-500 font-medium mt-1">
+              Digital modules & SOP reviews
+            </p>
+          </div>
+
+          <div className="bg-white p-5 rounded-xl border border-stone-200 shadow-sm">
+            <div className="flex items-center justify-between text-stone-500 mb-2">
+              <span className="text-xs font-semibold uppercase tracking-wider">Credentials Issued</span>
+              <Award className="w-4 h-4 text-stone-700" />
+            </div>
+            <p className="text-2xl font-extrabold text-stone-900 font-mono">
+              {analytics?.overview?.totalCertificatesIssued || 144}
+            </p>
+            <p className="text-[11px] text-stone-500 font-medium mt-1">
+              Verified by The Lucky Hotel
+            </p>
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-5 hotel-shadow">
-          <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
-            <span>Active Hotel Associates</span>
-            <Users className="w-4 h-4 text-slate-700" />
+        {/* Operational Alerts */}
+        {analytics?.complianceAlerts && analytics.complianceAlerts.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500">
+              Departmental Compliance Action Items
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {analytics.complianceAlerts.map(alert => (
+                <div key={alert.id} className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm flex items-start gap-3">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-xs font-bold text-stone-900">{alert.title}</h4>
+                    <p className="text-xs text-stone-600 mt-0.5 leading-relaxed">{alert.message}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="text-3xl font-bold text-slate-900 font-mono">
-            {overview.totalStaff || 84}
+        )}
+
+        {/* Department Compliance Matrix */}
+        <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-stone-100 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-stone-900">
+                Department Performance & Completion Matrix
+              </h3>
+              <p className="text-xs text-stone-500 mt-0.5">
+                Real-time training progress and compliance scores by hotel department
+              </p>
+            </div>
           </div>
-          <div className="text-[11px] text-slate-500 mt-1">
-            Across 8 hotel departments
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-stone-50 text-stone-500 font-bold uppercase tracking-wider border-b border-stone-200">
+                <tr>
+                  <th className="py-3 px-5">Department</th>
+                  <th className="py-3 px-4">Staff Count</th>
+                  <th className="py-3 px-4">Active Modules</th>
+                  <th className="py-3 px-4">Compliance</th>
+                  <th className="py-3 px-4">Overdue Items</th>
+                  <th className="py-3 px-4 text-right">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-100">
+                {analytics?.roleStats?.map(role => (
+                  <tr key={role.roleId} className="hover:bg-stone-50/70 transition-colors">
+                    <td className="py-3.5 px-5 font-bold text-stone-900">
+                      {role.roleTitle}
+                    </td>
+                    <td className="py-3.5 px-4 text-stone-600 font-mono">
+                      {role.staffCount} Associates
+                    </td>
+                    <td className="py-3.5 px-4 text-stone-600 font-mono">
+                      {role.modulesCount} Modules
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-stone-900">{role.complianceRate}%</span>
+                        <div className="w-20 bg-stone-200 h-1.5 rounded-full overflow-hidden">
+                          <div 
+                            className="bg-stone-900 h-full rounded-full" 
+                            style={{ width: `${role.complianceRate}%` }} 
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-4 text-stone-600">
+                      {role.overdueCount > 0 ? (
+                        <span className="text-amber-700 font-semibold">{role.overdueCount} Pending</span>
+                      ) : (
+                        <span className="text-emerald-700 font-semibold">0 Clean</span>
+                      )}
+                    </td>
+                    <td className="py-3.5 px-4 text-right">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-stone-100 text-stone-700">
+                        Active
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-5 hotel-shadow">
-          <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
-            <span>Training Hours Logged (Mo.)</span>
-            <Clock className="w-4 h-4 text-stone-600" />
+        {/* Staff Profiles Roster */}
+        <div className="bg-white rounded-xl border border-stone-200 shadow-sm p-5">
+          <div className="mb-4">
+            <h3 className="text-sm font-bold text-stone-900">
+              Hotel Staff Roster & Training Profiles
+            </h3>
+            <p className="text-xs text-stone-500 mt-0.5">
+              Inspect employee credentials, current progress, and assignable learning pathways
+            </p>
           </div>
-          <div className="text-3xl font-bold text-slate-900 font-mono">
-            {overview.activeTrainingHoursThisMonth || 1280}h
-          </div>
-          <div className="text-[11px] text-slate-500 mt-1">
-            +18% vs prior month
-          </div>
-        </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-5 hotel-shadow">
-          <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
-            <span>Accredited Diplomas</span>
-            <Award className="w-4 h-4 text-stone-700" />
-          </div>
-          <div className="text-3xl font-bold text-slate-900 font-mono">
-            {overview.totalCertificatesIssued || 144}
-          </div>
-          <div className="text-[11px] text-slate-500 mt-1">
-            Verified corporate credentials
-          </div>
-        </div>
-
-      </div>
-
-      {/* Compliance Reminders */}
-      {complianceAlerts.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            Priority Compliance Flags
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {complianceAlerts.map(alert => (
-              <div key={alert.id} className="p-4 rounded-xl bg-stone-100 border border-stone-200 text-xs flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-stone-700 shrink-0 mt-0.5" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {demoProfiles.map(p => (
+              <div key={p.email} className="p-4 rounded-xl border border-stone-200 bg-stone-50/50 flex flex-col justify-between">
                 <div>
-                  <strong className="text-stone-900 font-bold block mb-0.5">
-                    {alert.title}
-                  </strong>
-                  <span className="text-stone-800">{alert.message}</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-mono text-stone-500 font-semibold">
+                      {p.employeeId}
+                    </span>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                      p.role === 'manager' ? 'bg-stone-800 text-white' : 'bg-stone-200 text-stone-700'
+                    }`}>
+                      {p.role === 'manager' ? 'Director' : 'Staff'}
+                    </span>
+                  </div>
+                  <h4 className="text-xs font-bold text-stone-900">{p.name}</h4>
+                  <p className="text-[11px] text-stone-500 mt-0.5">{p.position}</p>
+                  <p className="text-[10px] text-stone-400 mt-0.5">{p.department}</p>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-stone-200/60 flex items-center justify-between text-[11px]">
+                  <span className="text-stone-500">Property: TLH-01</span>
+                  <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" />
+                    Compliant
+                  </span>
                 </div>
               </div>
             ))}
           </div>
         </div>
-      )}
 
-      {/* Department Breakdown Matrix */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 hotel-shadow space-y-5">
-        <h3 className="text-base font-bold text-slate-900">
-          Departmental SOP Completion Matrix
-        </h3>
-
-        <div className="space-y-4">
-          {roleStats.map((stat) => (
-            <div key={stat.roleId} className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-slate-800">
-                  {stat.roleTitle} ({stat.staffCount} Staff)
-                </span>
-                <div className="flex items-center gap-4 text-slate-500">
-                  <span>{stat.modulesCount} Modules Active</span>
-                  <span className="font-mono font-bold text-slate-900">{stat.complianceRate}% Certified</span>
-                </div>
-              </div>
-              <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-slate-900 rounded-full transition-all duration-500"
-                  style={{ width: `${stat.complianceRate}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Staff Roster */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 hotel-shadow space-y-4">
-        <h3 className="text-base font-bold text-slate-900">
-          Active Staff Associate Training Status
-        </h3>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="border-b border-slate-200 text-slate-500 uppercase tracking-wider font-semibold">
-                <th className="pb-3">Employee</th>
-                <th className="pb-3">Employee ID</th>
-                <th className="pb-3">Department & Role</th>
-                <th className="pb-3">CEU Credits</th>
-                <th className="pb-3 text-right">Completed Courses</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {staffList.map((s) => (
-                <tr key={s.id} className="hover:bg-slate-50">
-                  <td className="py-3 pr-4 flex items-center gap-3">
-                    <img
-                      src={s.avatar}
-                      alt={s.name}
-                      className="w-8 h-8 rounded-full object-cover ring-1 ring-slate-200"
-                    />
-                    <div>
-                      <div className="font-bold text-slate-900">{s.name}</div>
-                      <div className="text-[11px] text-slate-400">{s.email}</div>
-                    </div>
-                  </td>
-                  <td className="py-3 pr-4 font-mono font-semibold text-slate-700">
-                    {s.employeeId || 'EMP-4109'}
-                  </td>
-                  <td className="py-3 pr-4 text-slate-600">
-                    {s.position} ({s.department})
-                  </td>
-                  <td className="py-3 pr-4 font-mono font-bold text-emerald-700">
-                    {s.ceuCredits || 18.5} CEU
-                  </td>
-                  <td className="py-3 text-right font-mono font-bold text-slate-900">
-                    {s.completedModules ? s.completedModules.length : 0} Courses
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       </div>
 
       {/* Author New Module Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
-          <div className="w-full max-w-xl bg-white border border-slate-200 rounded-2xl shadow-2xl p-6 sm:p-8 my-8 text-slate-900">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200 mb-6">
-              <h2 className="text-lg font-bold font-sans font-bold">
-                Author New Staff Training Course
-              </h2>
+      {showAddModuleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-lg bg-white border border-stone-200 rounded-2xl shadow-xl p-6 text-stone-900">
+            
+            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-stone-700" />
+                <h3 className="text-sm font-bold text-stone-900">Author New Training Module</h3>
+              </div>
               <button
-                onClick={() => setShowCreateModal(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600"
+                onClick={() => setShowAddModuleModal(false)}
+                className="p-1 rounded-lg text-stone-400 hover:text-stone-700"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateModule} className="space-y-4 text-xs">
-              <div>
-                <label className="block text-slate-700 font-bold mb-1">
-                  Course Title *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. VIP Limousine Transfer & Baggage Handling"
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-slate-900"
-                />
+            {submitSuccess ? (
+              <div className="py-12 text-center">
+                <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Check className="w-6 h-6" />
+                </div>
+                <h4 className="text-sm font-bold text-stone-900">Module Published Successfully</h4>
+                <p className="text-xs text-stone-500 mt-1">Available immediately in the staff course catalog.</p>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            ) : (
+              <form onSubmit={handleCreateModule} className="space-y-4 mt-4 text-xs">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">
-                    Course Code *
-                  </label>
+                  <label className="block text-stone-700 font-semibold mb-1">Module Title *</label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. CON-503"
-                    value={newCourseCode}
-                    onChange={(e) => setNewCourseCode(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 font-mono text-slate-900"
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    placeholder="e.g. VIP Concierge Luggage Delivery Protocol"
+                    className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-400"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">
-                    Staff Role
-                  </label>
-                  <select
-                    value={newStaffRole}
-                    onChange={(e) => {
-                      setNewStaffRole(e.target.value);
-                      const deptMap = {
-                        'front-desk': 'Front Desk & Reception',
-                        'housekeeping': 'Housekeeping & Rooms',
-                        'food-beverage': 'F&B Service & Banquets',
-                        'kitchen': 'Culinary & Stewarding',
-                        'concierge-valet': 'Concierge & Guest Services',
-                        'security': 'Safety, Security & Loss Prevention',
-                        'bartending': 'Bar & Mixology',
-                        'spa-wellness': 'Spa & Wellness'
-                      };
-                      setNewDepartment(deptMap[e.target.value] || 'Hotel Operations');
-                    }}
-                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
-                  >
-                    <option value="front-desk">Front Desk & Reception</option>
-                    <option value="housekeeping">Housekeeping & Rooms</option>
-                    <option value="food-beverage">F&B Service & Banquets</option>
-                    <option value="kitchen">Culinary & Kitchen</option>
-                    <option value="concierge-valet">Concierge & Valet</option>
-                    <option value="security">Security & Loss Prevention</option>
-                    <option value="bartending">Bar & Mixology</option>
-                    <option value="spa-wellness">Spa & Wellness</option>
-                  </select>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-stone-700 font-semibold mb-1">Target Department</label>
+                    <select
+                      value={newDepartment}
+                      onChange={(e) => setNewDepartment(e.target.value)}
+                      className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-400"
+                    >
+                      <option value="Front Desk & Reception">Front Desk & Reception</option>
+                      <option value="Housekeeping & Rooms">Housekeeping & Rooms</option>
+                      <option value="F&B Service & Banquets">F&B Service & Banquets</option>
+                      <option value="Culinary & Stewarding">Culinary & Stewarding</option>
+                      <option value="Concierge & Guest Services">Concierge & Guest Services</option>
+                      <option value="Safety & Security">Safety & Security</option>
+                      <option value="Bar & Mixology">Bar & Mixology</option>
+                      <option value="Spa & Wellness">Spa & Wellness</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-stone-700 font-semibold mb-1">Course Code</label>
+                    <input
+                      type="text"
+                      value={newCourseCode}
+                      onChange={(e) => setNewCourseCode(e.target.value)}
+                      placeholder="e.g. CON-201"
+                      className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-stone-400"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-slate-700 font-bold mb-1">
-                  Compliance Classification
-                </label>
-                <select
-                  value={newType}
-                  onChange={(e) => setNewType(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
-                >
-                  <option value="Mandatory Onboarding">Mandatory Onboarding</option>
-                  <option value="Mandatory Compliance">Mandatory Compliance</option>
-                  <option value="Skill Upgrade">Skill Upgrade</option>
-                  <option value="Elective">Elective</option>
-                </select>
-              </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-stone-700 font-semibold mb-1">SOP Reference Code</label>
+                    <input
+                      type="text"
+                      value={newSopCode}
+                      onChange={(e) => setNewSopCode(e.target.value)}
+                      placeholder="e.g. SOP-CON-04"
+                      className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-stone-400"
+                    />
+                  </div>
 
-              <div>
-                <label className="block text-slate-700 font-bold mb-1">
-                  Course Summary & SOP Objectives *
-                </label>
-                <textarea
-                  required
-                  rows={3}
-                  placeholder="Detail learning objectives, Forbes standards, and required competencies..."
-                  value={newSummary}
-                  onChange={(e) => setNewSummary(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
-                />
-              </div>
+                  <div>
+                    <label className="block text-stone-700 font-semibold mb-1">Estimated Duration</label>
+                    <input
+                      type="text"
+                      value={newDuration}
+                      onChange={(e) => setNewDuration(e.target.value)}
+                      placeholder="e.g. 25 min"
+                      className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-400"
+                    />
+                  </div>
+                </div>
 
-              <div className="pt-4 border-t border-slate-200 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-6 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold"
-                >
-                  {isSubmitting ? 'Publishing...' : 'Publish to Staff Catalog'}
-                </button>
-              </div>
-            </form>
+                <div>
+                  <label className="block text-stone-700 font-semibold mb-1">Executive Summary & Standards *</label>
+                  <textarea
+                    rows={3}
+                    required
+                    value={newSummary}
+                    onChange={(e) => setNewSummary(e.target.value)}
+                    placeholder="Brief description of the mandatory procedures, standards, and learning objectives..."
+                    className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-stone-400 resize-none"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-stone-100">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModuleModal(false)}
+                    className="px-4 py-2 rounded-lg border border-stone-200 hover:bg-stone-50 text-stone-700 font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-5 py-2 rounded-lg bg-stone-900 hover:bg-stone-800 disabled:opacity-50 text-white font-semibold shadow-sm"
+                  >
+                    {isSubmitting ? 'Publishing...' : 'Publish Module'}
+                  </button>
+                </div>
+              </form>
+            )}
+
           </div>
         </div>
       )}

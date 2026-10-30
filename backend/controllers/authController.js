@@ -1,110 +1,79 @@
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 import { store } from '../data/store.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'grandluxe_hotel_secret_key_2026_luxury_academy';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET || JWT_SECRET.length < 32) {
+  console.warn('[Auth] JWT_SECRET is missing or shorter than 32 characters. Set a strong secret in backend/.env.');
+}
+const signingSecret = JWT_SECRET || 'development-only-change-this-secret-32-chars';
 
-const generateToken = (user) => {
-  return jwt.sign(
-    { id: user.id, email: user.email, role: user.role, name: user.name },
-    JWT_SECRET,
-    { expiresIn: '7d' }
-  );
-};
+const generateToken = (user) => jwt.sign(
+  { id: user.id, email: user.email, role: user.role, name: user.name },
+  signingSecret,
+  { expiresIn: '7d' }
+);
 
-export const login = (req, res) => {
+export const login = async (req, res) => {
   try {
     const { email, employeeId, identifier, password, expectedRole } = req.body;
     const loginId = email || employeeId || identifier;
-    if (!loginId) {
-      return res.status(400).json({ message: 'Employee ID or Hotel Email is required' });
+    if (!loginId || !password) {
+      return res.status(400).json({ message: 'Employee ID/email and password are required' });
     }
-
     const user = store.getUserByEmail(loginId);
-    if (!user) {
-      return res.status(401).json({ message: 'User record not found. Please verify your Employee ID or Hotel Email.' });
+    if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ message: 'Invalid login credentials' });
     }
-
-    // Role check if logging in through director portal
-    if (expectedRole === 'manager' && user.role !== 'manager' && user.role !== 'admin') {
-      return res.status(403).json({ message: 'Access Denied: This portal requires Executive Management or Director credentials.' });
+    if (expectedRole === 'manager' && !['manager', 'admin'].includes(user.role)) {
+      return res.status(403).json({ message: 'This portal requires manager credentials.' });
     }
-
     const token = generateToken(user);
-    const { password: _, ...safeUser } = user;
-
-    res.json({
-      success: true,
-      token,
-      user: safeUser
-    });
+    const { password: _password, ...safeUser } = user;
+    return res.json({ success: true, token, user: safeUser });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: 'Login failed. Please try again.' });
   }
 };
 
-export const register = (req, res) => {
+export const register = async (req, res) => {
   try {
-    const { name, email, password, department, position, role } = req.body;
-    if (!name || !email) {
-      return res.status(400).json({ message: 'Name and email are required' });
+    const { name, email, password, department, position } = req.body;
+    if (!name?.trim() || !email?.trim() || !password) {
+      return res.status(400).json({ message: 'Name, email and password are required' });
     }
-
-    const existing = store.getUserByEmail(email);
-    if (existing) {
-      return res.status(400).json({ message: 'User with this email already exists' });
+    if (password.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters long' });
     }
-
+    if (store.getUserByEmail(email)) {
+      return res.status(409).json({ message: 'User with this email already exists' });
+    }
+    const passwordHash = await bcrypt.hash(password, 10);
     const newUser = store.addUser({
-      name,
-      email,
-      password: password || 'password123',
-      department: department || 'Front Office',
-      position: position || 'Hospitality Associate',
-      role: role || 'staff'
+      name: name.trim(), email: email.trim().toLowerCase(), password: passwordHash,
+      department: department || 'Front Office', position: position || 'Hospitality Associate', role: 'staff'
     });
-
-    const token = generateToken(newUser);
-    res.status(201).json({
-      success: true,
-      token,
-      user: newUser
-    });
+    const token = generateToken({ ...newUser, role: 'staff' });
+    return res.status(201).json({ success: true, token, user: newUser });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({ message: 'Registration failed. Please try again.' });
   }
 };
 
 export const getCurrentUser = (req, res) => {
-  try {
-    const userId = req.user?.id;
-    if (!userId) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
-
-    const user = store.getUserById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    res.json({ success: true, user });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+  const user = store.getUserById(req.user?.id);
+  if (!user) return res.status(404).json({ message: 'User not found' });
+  return res.json({ success: true, user });
 };
 
-// Demo quick-switch route for instant evaluator convenience
-export const demoSwitch = (req, res) => {
-  try {
-    const { email } = req.body;
-    const user = store.getUserByEmail(email || 'trainee@grandluxe.com');
-    if (!user) {
-      return res.status(404).json({ message: 'Demo profile not found' });
-    }
-    const token = generateToken(user);
-    const { password: _, ...safeUser } = user;
-    res.json({ success: true, token, user: safeUser });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+export const demoSwitch = async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ message: 'Demo account switching is disabled in production.' });
   }
+  const { email } = req.body;
+  const user = store.getUserByEmail(email || 'aiden.mercer@luckyhotel.com');
+  if (!user) return res.status(404).json({ message: 'Demo profile not found' });
+  const token = generateToken(user);
+  const { password: _password, ...safeUser } = user;
+  return res.json({ success: true, token, user: safeUser });
 };
-

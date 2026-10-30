@@ -69,6 +69,12 @@ The curriculum is organized across 8 core hotel departments with official course
 
 ## 🚀 Running the Project Locally
 
+> **Important:** The current API uses a seeded in-memory data store for its application data. MongoDB connection is currently optional and the Mongoose models are not yet wired into the API controllers. Records created during a run are lost when the server restarts. Do not treat this build as production-ready persistent MERN storage.
+
+### 0. Configure the backend
+Copy `backend/.env.example` to `backend/.env`, then set a unique `JWT_SECRET` (at least 32 characters). Set `MONGODB_URI` if you have MongoDB running. Never commit or share `backend/.env`.
+
+
 ### 1. Install Dependencies
 ```bash
 # In the root folder:
@@ -90,6 +96,8 @@ npm run dev
 ---
 
 ## 👥 Demo Logins
+
+All four seeded demo accounts use the demo password `password123` in this development build. Change or remove these credentials before any real deployment.
 
 | Persona | Role | Email / Employee ID | Password |
 |---|---|---|---|
