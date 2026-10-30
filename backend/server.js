@@ -66,7 +66,7 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`\n======================================================`);
-  console.log(`🏨 THE LUCKY HOTEL - Staff Training Platform Full-Stack Platform RUNNING!`);
+  console.log(`🏨 THE LUCKY HOTEL - Staff Training Platform RUNNING!`);
   console.log(`📡 Web Application & API: http://localhost:${PORT}`);
   console.log(`🩺 Health check: http://localhost:${PORT}/api/health`);
   console.log(`======================================================\n`);
