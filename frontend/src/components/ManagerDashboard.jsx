@@ -480,3 +480,4 @@ export const ManagerDashboard = ({ onSelectModule }) => {
     </div>
   );
 };
+

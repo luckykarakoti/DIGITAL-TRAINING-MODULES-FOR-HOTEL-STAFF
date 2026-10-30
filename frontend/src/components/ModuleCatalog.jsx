@@ -370,3 +370,4 @@ export const ModuleCatalog = ({ onSelectModule, onViewCertificate }) => {
     </div>
   );
 };
+

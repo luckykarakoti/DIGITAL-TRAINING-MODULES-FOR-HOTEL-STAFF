@@ -119,7 +119,7 @@ export const seedModules = [
         id: "fo-101-l1",
         title: "The 15/5 Foot Rule & Verbal Salutation",
         duration: "8 min",
-        videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-hotel-receptionist-welcoming-a-customer-41724-large.mp4",
+        videoUrl: "https://www.youtube-nocookie.com/embed/B3pb8y-0Cos",
         sopObjective: "Ensure every guest is acknowledged within 15 seconds without exception.",
         standards: [
           "15-Foot Standard: Make natural eye contact and offer an engaging warm smile.",

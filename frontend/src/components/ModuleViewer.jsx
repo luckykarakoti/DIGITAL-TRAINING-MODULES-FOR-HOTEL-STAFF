@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { VideoPlayer } from './VideoPlayer';
 import { 
   ArrowLeft, 
   CheckCircle2, 
@@ -352,25 +353,26 @@ export const ModuleViewer = ({ module: initialModule, moduleId, onBack, onViewCe
                   )}
                 </div>
 
-                {/* Training Video Simulation Player Frame */}
-                {currentLesson.videoUrl && (
-                  <div className="bg-stone-900 rounded-xl overflow-hidden border border-stone-800 shadow-sm">
-                    <div className="aspect-video relative flex items-center justify-center bg-stone-950">
-                      <video
-                        controls
-                        poster={module.thumbnail}
-                        className="w-full h-full object-cover"
-                        src={currentLesson.videoUrl}
-                      >
-                        Your browser does not support the video tag.
-                      </video>
-                    </div>
-                    <div className="p-3 bg-stone-900 border-t border-stone-800 flex items-center justify-between text-[11px] text-stone-400">
-                      <span>THE LUCKY HOTEL Training Demonstration</span>
-                      <span>Quality Assurance Video SOP</span>
-                    </div>
-                  </div>
-                )}
+                {/* Training Video Demonstration & SOP Walkthrough */}
+                <VideoPlayer
+                  videoUrl={
+                    currentLesson.videoUrl && !currentLesson.videoUrl.includes('mixkit.co')
+                      ? currentLesson.videoUrl
+                      : (module.staffRole === 'housekeeping'
+                          ? 'https://www.youtube-nocookie.com/embed/2i3eU0vQ-pQ'
+                          : module.staffRole === 'food-beverage'
+                            ? 'https://www.youtube-nocookie.com/embed/w_O9tH30_uE'
+                            : module.staffRole === 'kitchen'
+                              ? 'https://www.youtube-nocookie.com/embed/f9cQ-Yq0Z2I'
+                              : 'https://www.youtube-nocookie.com/embed/B3pb8y-0Cos')
+                  }
+                  thumbnail={module.thumbnail}
+                  title={currentLesson.title}
+                  department={module.department}
+                  procedureSteps={currentLesson.procedureSteps}
+                  standards={currentLesson.standards}
+                  duration={currentLesson.duration}
+                />
 
                 {/* Core Hospitality Standards */}
                 {currentLesson.standards && currentLesson.standards.length > 0 && (
@@ -651,3 +653,4 @@ export const ModuleViewer = ({ module: initialModule, moduleId, onBack, onViewCe
     </div>
   );
 };
+
