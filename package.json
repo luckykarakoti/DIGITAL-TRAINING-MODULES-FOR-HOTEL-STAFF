@@ -1,0 +1,25 @@
+{
+  "name": "grandluxe-hotel-staff-training",
+  "version": "1.0.0",
+  "description": "Full Stack MERN Platform for Hotel Staff Digital Training & SOP Certification",
+  "scripts": {
+    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"blue,yellow\" \"npm run server\" \"npm run client\"",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "server": "cd backend && npm run dev",
+    "client": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && npm start",
+    "seed": "cd backend && npm run seed"
+  },
+  "keywords": [
+    "hotel",
+    "training",
+    "mern",
+    "hospitality",
+    "staff-onboarding",
+    "sop"
+  ],
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
